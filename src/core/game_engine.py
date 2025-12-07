@@ -43,35 +43,35 @@ class GameEngine:
         print(f"TURN {self.turn_number}")
         print("=" * 70)
         
-        # Player stats
+        
         player_hp_bar = utils.create_bar(self.player.hp, self.player.max_hp, 30)
         player_stam_bar = utils.create_bar(self.player.stamina, self.player.max_stamina, 25)
         print(f"\n{self.player.name.upper()}")
         print(f"  HP:  [{player_hp_bar}] {self.player.hp}/{self.player.max_hp}")
         print(f"  ST:  [{player_stam_bar}] {self.player.stamina}/{self.player.max_stamina}")
         
-        # Player status effects
+        
         player_effects = utils.format_status_effects(self.player)
         if player_effects != "None":
             print(f"  Effects: {player_effects}")
         if self.player.special_move_cooldown > 0:
             print(f"  Special Cooldown: {self.player.special_move_cooldown} turns")
         
-        # AI stats
+        
         ai_hp_bar = utils.create_bar(self.ai_char.hp, self.ai_char.max_hp, 30)
         ai_stam_bar = utils.create_bar(self.ai_char.stamina, self.ai_char.max_stamina, 25)
         print(f"\n{self.ai_char.name.upper()}")
         print(f"  HP:  [{ai_hp_bar}] {self.ai_char.hp}/{self.ai_char.max_hp}")
         print(f"  ST:  [{ai_stam_bar}] {self.ai_char.stamina}/{self.ai_char.max_stamina}")
         
-        # AI status effects
+        
         ai_effects = utils.format_status_effects(self.ai_char)
         if ai_effects != "None":
             print(f"  Effects: {ai_effects}")
         if self.ai_char.special_move_cooldown > 0:
             print(f"  Special Cooldown: {self.ai_char.special_move_cooldown} turns")
         
-        # AI State
+        
         if config.SHOW_AI_DECISIONS:
             state_info = self.ai_controller.get_state_info()
             print(f"  AI State: {state_info['state']}")
@@ -80,7 +80,7 @@ class GameEngine:
         print("YOUR MOVES:")
         print("-" * 70)
         
-        # Show moves
+        
         available_moves = moves.get_available_moves(self.player)
         move_options = []
         for i, move in enumerate(available_moves, 1):
@@ -111,14 +111,14 @@ class GameEngine:
         """Process status effects for both characters at the start of turn."""
         status_messages = []
         
-        # Process player status effects
+        
         player_effects = self.player.process_status_effects()
         if player_effects['damage'] > 0:
             status_messages.append(f"{self.player.name} takes {player_effects['damage']} damage from status effects!")
             if player_effects['expired_effects']:
                 status_messages.append(f"  {self.player.name}'s effects expired: {', '.join(player_effects['expired_effects'])}")
         
-        # Process AI status effects
+        
         ai_effects = self.ai_char.process_status_effects()
         if ai_effects['damage'] > 0:
             status_messages.append(f"{self.ai_char.name} takes {ai_effects['damage']} damage from status effects!")
@@ -130,7 +130,7 @@ class GameEngine:
                 print(msg)
                 time.sleep(0.5)
         
-        # Check if anyone died from status effects
+        
         if not self.player.is_alive():
             self.game_over = True
             self.winner = self.ai_char
@@ -140,7 +140,7 @@ class GameEngine:
     
     def reset_turn_status(self):
         """Reset status effects (block/evade) for both characters."""
-        # Decay momentum if same move repeated
+        
         if self.player.last_move and self.player.last_move in ['punch', 'kick']:
             self.player.move_variety_bonus = max(0.0, self.player.move_variety_bonus - config.MOMENTUM_DECAY)
         if self.ai_char.last_move and self.ai_char.last_move in ['punch', 'kick']:
@@ -156,10 +156,10 @@ class GameEngine:
     
     def player_turn(self):
         """Handle player's turn."""
-        # Display battle status with moves
+        
         self.display_battle_status_with_moves()
         
-        # Get player input
+        
         available_moves = moves.get_available_moves(self.player)
         move_options = []
         for i, move in enumerate(available_moves, 1):
@@ -172,7 +172,7 @@ class GameEngine:
             case_sensitive=False
         )
         
-        # Convert input to move name
+        
         player_move = None
         for num, move in move_options:
             if choice == num or choice.lower() == move.lower():
@@ -182,31 +182,31 @@ class GameEngine:
         if player_move is None:
             player_move = choice.lower()
         
-        # Track AI HP before player move
+        
         ai_hp_before = self.ai_char.hp
         
-        # Execute player move
+        
         result = moves.execute_move(player_move, self.player, self.ai_char)
         
-        # Track damage dealt to AI
+        
         damage_to_ai = ai_hp_before - self.ai_char.hp
         if damage_to_ai > 0:
             self.ai_controller.record_damage_taken(damage_to_ai)
         
-        # Display result
+        
         print(f"\n{self.player.name}: {result.get('message', '')}")
         time.sleep(1.0)
         
-        # Record move for AI pattern detection
-        # Normalize punch/kick to 'attack' for pattern recognition, or keep specific for counter logic
+        
+        
         if player_move == 'special':
             self.ai_controller.record_player_move('special')
         elif player_move in ['punch', 'kick']:
-            self.ai_controller.record_player_move(player_move)  # Keep specific for counter logic
+            self.ai_controller.record_player_move(player_move)  
         else:
             self.ai_controller.record_player_move(player_move)
         
-        # Check if AI is defeated
+        
         if not self.ai_char.is_alive():
             self.game_over = True
             self.winner = self.player
@@ -216,14 +216,14 @@ class GameEngine:
     
     def ai_turn(self):
         """Handle AI's turn."""
-        # AI makes move
+        
         result = self.ai_controller.make_move(self.player)
         
-        # Display result
+        
         print(f"{self.ai_char.name}: {result.get('message', '')}")
         time.sleep(1.0)
         
-        # Check if player is defeated
+        
         if not self.player.is_alive():
             self.game_over = True
             self.winner = self.ai_char
@@ -236,18 +236,18 @@ class GameEngine:
         self.turn_number += 1
         
         
-        # Process status effects at start of turn
+        
         self.process_status_effects()
         if self.game_over:
             return
         
-        # Tick cooldowns (decrease cooldown counters)
+        
         self.tick_cooldowns()
         
-        # Reset turn status (block/evade)
+        
         self.reset_turn_status()
         
-        # Player goes first (configurable)
+        
         if config.PLAYER_TURN_FIRST:
             self.player_turn()
             if self.game_over:
@@ -261,7 +261,7 @@ class GameEngine:
             
             self.player_turn()
         
-        # Brief pause before next turn
+        
         if not self.game_over:
             time.sleep(0.5)
     
@@ -312,7 +312,7 @@ class GameEngine:
         while not self.game_over:
             self.execute_turn()
             
-            # Check game over condition
+            
             if self.check_game_over():
                 break
         
@@ -332,16 +332,16 @@ def create_game(player_character_name, ai_character_name=None, difficulty='mediu
     Returns:
         GameEngine instance
     """
-    # Create player character
+    
     player_char = characters.get_character(player_character_name)
     if player_char is None:
         raise ValueError(f"Invalid player character: {player_character_name}")
     
-    # Create AI character
+    
     if ai_character_name is None:
         import random
         available_chars = characters.list_all_characters()
-        # Don't let AI use same character as player
+        
         available_chars = [c for c in available_chars if c != player_character_name.lower()]
         ai_character_name = random.choice(available_chars)
     
@@ -365,7 +365,6 @@ def display_character_selection():
     
     char_list = characters.list_all_characters()
     
-    # Display in a clean table
     print(f"\n{'─' * 70}")
     print(f"{'#':<4} {'Character':<18} {'Special Move':<22} {'HP':<6} {'Stam':<6} {'Dmg':<4}")
     print(f"{'─' * 70}")
@@ -381,7 +380,7 @@ def display_character_selection():
         try:
             choice = input(f"\n🎮 Select a character (1-{len(char_list)} or name): ").strip()
             
-            # Try as number
+            
             if choice.isdigit():
                 choice_num = int(choice)
                 if 1 <= choice_num <= len(char_list):
@@ -393,7 +392,7 @@ def display_character_selection():
                     print(f"  ❌ Please enter a number between 1 and {len(char_list)}")
                     continue
             
-            # Try as name
+            
             choice_lower = choice.lower()
             if choice_lower in char_list:
                 selected_char = characters.get_character(choice_lower)
@@ -426,6 +425,7 @@ def display_difficulty_selection():
     print(f"{'3':<4} {'Hard':<20} {'AI is more aggressive and strategic'}")
     print(f"{'─' * 70}")
     
+    
     while True:
         try:
             choice = input(f"\n🎮 Select difficulty (1-3 or name): ").strip().lower()
@@ -453,21 +453,21 @@ def display_difficulty_selection():
 def main_game_loop():
     """Main game loop for running the game."""
     try:
-        # Difficulty selection
+        
         difficulty = display_difficulty_selection()
         
-        # Character selection
+        
         player_char_name = display_character_selection()
         
-        # Create and run game
+        
         game = create_game(player_char_name, difficulty=difficulty)
         winner = game.run_game()
         
-        # Ask if player wants to play again
+        
         while True:
             play_again = input("\nPlay again? (y/n): ").strip().lower()
             if play_again in ['y', 'yes']:
-                # Ask if they want to change difficulty
+                
                 change_diff = input("Change difficulty? (y/n): ").strip().lower()
                 if change_diff in ['y', 'yes']:
                     difficulty = display_difficulty_selection()

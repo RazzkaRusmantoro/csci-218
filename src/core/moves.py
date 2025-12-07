@@ -20,7 +20,7 @@ def punch(attacker, target):
     Returns:
         dict: Result of the punch with damage, message, etc.
     """
-    # Check stamina
+    
     if attacker.stamina < config.PUNCH_STAMINA_COST:
         return {
             'success': False,
@@ -28,27 +28,27 @@ def punch(attacker, target):
             'stamina_cost': 0
         }
     
-    # Consume stamina
+    
     attacker.stamina -= config.PUNCH_STAMINA_COST
     
-    # Track consecutive punches (fatigue system)
+    
     if attacker.last_move == 'punch':
         attacker.consecutive_punches += 1
     else:
-        attacker.consecutive_punches = 1  # Reset if different move
-    attacker.consecutive_kicks = 0  # Reset kicks when punching
+        attacker.consecutive_punches = 1  
+    attacker.consecutive_kicks = 0  
     
     attacker.last_move = 'punch'
     
-    # Check if target evades
+    
     was_evading = target.is_evading
     evade_success = False
     if was_evading:
         evade_success = random.random() < config.EVADE_SUCCESS_CHANCE
         if evade_success:
-            # Successful evade - target can counter-attack
+            
             target.can_counter_attack = True
-            # Recover stamina from successful evade
+            
             target.restore_stamina(config.EVADE_STAMINA_RECOVERY)
             return {
                 'success': False,
@@ -58,25 +58,25 @@ def punch(attacker, target):
                 'counter_opportunity': True
             }
     
-    # Calculate base damage
+    
     base_damage = int(attacker.base_damage * config.PUNCH_DAMAGE_MULTIPLIER)
     
-    # Apply fatigue penalty (repeated punching becomes less effective)
-    # Fatigue applies from first consecutive punch
+    
+    
     fatigue_penalty = attacker.consecutive_punches * config.PUNCH_FATIGUE_PENALTY
     base_damage = int(base_damage * (1.0 - fatigue_penalty))
     
-    # Apply momentum bonus (reward for move variety)
+    
     momentum_bonus = attacker.move_variety_bonus
     
-    # Apply evade bonus if attacker has it (from previous evade)
+    
     evade_bonus = 0.0
     if attacker.has_status_effect('evade_bonus'):
         evade_bonus = attacker.status_effects['evade_bonus'].get('bonus', 0.0)
     
     base_damage = int(base_damage * (1.0 + momentum_bonus + evade_bonus))
     
-    # Check for miss chance (10% per consecutive punch, stacks)
+    
     miss_chance = attacker.consecutive_punches * config.PUNCH_MISS_CHANCE_PER_FATIGUE
     if miss_chance > 0 and random.random() < miss_chance:
         return {
@@ -86,7 +86,7 @@ def punch(attacker, target):
             'missed': True
         }
     
-    # Apply damage variance if enabled
+    
     if config.DAMAGE_VARIANCE_ENABLED:
         variance = random.uniform(
             1 - config.DAMAGE_VARIANCE_PERCENT,
@@ -94,32 +94,32 @@ def punch(attacker, target):
         )
         base_damage = int(base_damage * variance)
     
-    # Check if target is blocking (before applying damage)
+    
     was_blocking = target.is_blocking
     blocked_completely = False
     
-    # Apply damage to target
+    
     actual_damage = target.take_damage(base_damage)
     
-    # Check if it was completely blocked
+    
     if was_blocking and actual_damage == 0:
         blocked_completely = True
-        # Successful block - target can counter-attack
+        
         target.can_counter_attack = True
-        # Recover stamina from successful block
+        
         target.restore_stamina(config.BLOCK_STAMINA_RECOVERY)
     
-    # Counter-attack risk (if target blocked/evaded but didn't completely avoid)
+    
     counter_damage = 0
     counter_msg = ""
     if (was_blocking or was_evading) and not blocked_completely and not evade_success:
         if random.random() < config.PUNCH_COUNTER_RISK:
-            # Target counter-attacks!
-            counter_damage = int(target.base_damage * 0.8)  # 80% of base damage
+            
+            counter_damage = int(target.base_damage * 0.8)  
             attacker.hp = max(0, attacker.hp - counter_damage)
             counter_msg = f" {target.name} counter-attacks for {counter_damage} damage!"
     
-    # Check for critical hit (if enabled and not character-specific)
+    
     is_crit = False
     if random.random() < config.CRITICAL_HIT_CHANCE:
         is_crit = True
@@ -131,7 +131,7 @@ def punch(attacker, target):
     fatigue_msg = f" (fatigued: -{int(fatigue_penalty*100)}%)" if fatigue_penalty > 0 else ""
     momentum_msg = f" (momentum: +{int(momentum_bonus*100)}%)" if momentum_bonus > 0 else ""
     
-    # Build message based on block result
+    
     if blocked_completely:
         damage_msg = f"{attacker.name} punches, but {target.name} completely blocks it! (+{config.BLOCK_STAMINA_RECOVERY} stamina){counter_msg}"
     elif was_blocking and actual_damage < base_damage:
@@ -162,7 +162,7 @@ def block(character):
     Returns:
         dict: Result of the block action
     """
-    # Check stamina
+    
     if character.stamina < config.BLOCK_STAMINA_COST:
         return {
             'success': False,
@@ -170,21 +170,21 @@ def block(character):
             'stamina_cost': 0
         }
     
-    # Consume stamina
+    
     character.stamina -= config.BLOCK_STAMINA_COST
     
-    # Reset consecutive punches/kicks (blocking breaks fatigue)
+    
     character.consecutive_punches = 0
     character.consecutive_kicks = 0
     character.last_move = 'block'
     
-    # Update momentum (variety bonus)
+    
     character.move_variety_bonus = min(
         config.MOMENTUM_MAX_BONUS,
         character.move_variety_bonus + config.MOMENTUM_BONUS_PER_UNIQUE_MOVE
     )
     
-    # Set blocking state
+    
     character.is_blocking = True
     
     return {
@@ -207,7 +207,7 @@ def evade(character):
     Returns:
         dict: Result of the evade action
     """
-    # Check stamina
+    
     if character.stamina < config.EVADE_STAMINA_COST:
         return {
             'success': False,
@@ -215,24 +215,24 @@ def evade(character):
             'stamina_cost': 0
         }
     
-    # Consume stamina
+    
     character.stamina -= config.EVADE_STAMINA_COST
     
-    # Reset consecutive punches/kicks (evading breaks fatigue)
+    
     character.consecutive_punches = 0
     character.consecutive_kicks = 0
     character.last_move = 'evade'
     
-    # Update momentum (variety bonus)
+    
     character.move_variety_bonus = min(
         config.MOMENTUM_MAX_BONUS,
         character.move_variety_bonus + config.MOMENTUM_BONUS_PER_UNIQUE_MOVE
     )
     
-    # Set evading state
+    
     character.is_evading = True
     
-    # Apply next-turn damage bonus (stored in status effects)
+    
     character.apply_status_effect('evade_bonus', damage=0, turns=1, bonus=config.EVADE_NEXT_TURN_BONUS)
     
     return {
@@ -255,20 +255,20 @@ def rest(character):
     Returns:
         dict: Result of the rest action
     """
-    # Restore stamina
+    
     stamina_restored = int(character.max_stamina * config.REST_STAMINA_RESTORE_PERCENT)
     character.restore_stamina(stamina_restored)
     
-    # Restore HP (strategic benefit)
+    
     hp_restored = int(character.max_hp * config.REST_HP_RESTORE_PERCENT)
     character.restore_hp(hp_restored)
     
-    # Reset fatigue (consecutive punches/kicks)
+    
     character.consecutive_punches = 0
     character.consecutive_kicks = 0
     character.last_move = 'rest'
     
-    # Update momentum (variety bonus)
+    
     character.move_variety_bonus = min(
         config.MOMENTUM_MAX_BONUS,
         character.move_variety_bonus + config.MOMENTUM_BONUS_PER_UNIQUE_MOVE
@@ -297,7 +297,7 @@ def kick(attacker, target):
     Returns:
         dict: Result of the kick with damage, message, etc.
     """
-    # Check stamina
+    
     if attacker.stamina < config.KICK_STAMINA_COST:
         return {
             'success': False,
@@ -305,27 +305,27 @@ def kick(attacker, target):
             'stamina_cost': 0
         }
     
-    # Consume stamina
+    
     attacker.stamina -= config.KICK_STAMINA_COST
     
-    # Track consecutive kicks (fatigue system)
+    
     if attacker.last_move == 'kick':
         attacker.consecutive_kicks += 1
     else:
-        attacker.consecutive_kicks = 1  # Reset if different move
-    attacker.consecutive_punches = 0  # Reset punches when kicking
+        attacker.consecutive_kicks = 1  
+    attacker.consecutive_punches = 0  
     
     attacker.last_move = 'kick'
     
-    # Check if target evades
+    
     was_evading = target.is_evading
     evade_success = False
     if was_evading:
         evade_success = random.random() < config.EVADE_SUCCESS_CHANCE
         if evade_success:
-            # Successful evade - target can counter-attack
+            
             target.can_counter_attack = True
-            # Recover stamina from successful evade
+            
             target.restore_stamina(config.EVADE_STAMINA_RECOVERY)
             return {
                 'success': False,
@@ -335,24 +335,24 @@ def kick(attacker, target):
                 'counter_opportunity': True
             }
     
-    # Calculate base damage (higher than punch)
+    
     base_damage = int(attacker.base_damage * config.KICK_DAMAGE_MULTIPLIER)
     
-    # Apply fatigue penalty (repeated kicking becomes less effective)
+    
     fatigue_penalty = attacker.consecutive_kicks * config.KICK_FATIGUE_PENALTY
     base_damage = int(base_damage * (1.0 - fatigue_penalty))
     
-    # Apply momentum bonus (reward for move variety)
+    
     momentum_bonus = attacker.move_variety_bonus
     
-    # Apply evade bonus if attacker has it (from previous evade)
+    
     evade_bonus = 0.0
     if attacker.has_status_effect('evade_bonus'):
         evade_bonus = attacker.status_effects['evade_bonus'].get('bonus', 0.0)
     
     base_damage = int(base_damage * (1.0 + momentum_bonus + evade_bonus))
     
-    # Check for miss chance (base 30% + 10% per consecutive kick)
+    
     total_miss_chance = config.KICK_BASE_MISS_CHANCE + (attacker.consecutive_kicks * config.KICK_MISS_CHANCE_PER_FATIGUE)
     if random.random() < total_miss_chance:
         return {
@@ -362,7 +362,7 @@ def kick(attacker, target):
             'missed': True
         }
     
-    # Apply damage variance if enabled
+    
     if config.DAMAGE_VARIANCE_ENABLED:
         variance = random.uniform(
             1 - config.DAMAGE_VARIANCE_PERCENT,
@@ -370,32 +370,32 @@ def kick(attacker, target):
         )
         base_damage = int(base_damage * variance)
     
-    # Check if target is blocking (before applying damage)
+    
     was_blocking = target.is_blocking
     blocked_completely = False
     
-    # Apply damage to target
+    
     actual_damage = target.take_damage(base_damage)
     
-    # Check if it was completely blocked
+    
     if was_blocking and actual_damage == 0:
         blocked_completely = True
-        # Successful block - target can counter-attack
+        
         target.can_counter_attack = True
-        # Recover stamina from successful block
+        
         target.restore_stamina(config.BLOCK_STAMINA_RECOVERY)
     
-    # Counter-attack risk (if target blocked/evaded but didn't completely avoid)
+    
     counter_damage = 0
     counter_msg = ""
     if (was_blocking or was_evading) and not blocked_completely and not evade_success:
         if random.random() < config.KICK_COUNTER_RISK:
-            # Target counter-attacks!
-            counter_damage = int(target.base_damage * 0.8)  # 80% of base damage
+            
+            counter_damage = int(target.base_damage * 0.8)  
             attacker.hp = max(0, attacker.hp - counter_damage)
             counter_msg = f" {target.name} counter-attacks for {counter_damage} damage!"
     
-    # Check for critical hit (if enabled and not character-specific)
+    
     is_crit = False
     if random.random() < config.CRITICAL_HIT_CHANCE:
         is_crit = True
@@ -407,7 +407,7 @@ def kick(attacker, target):
     fatigue_msg = f" (fatigued: -{int(fatigue_penalty*100)}%)" if fatigue_penalty > 0 else ""
     momentum_msg = f" (momentum: +{int(momentum_bonus*100)}%)" if momentum_bonus > 0 else ""
     
-    # Build message based on block result
+    
     if blocked_completely:
         damage_msg = f"{attacker.name} kicks, but {target.name} completely blocks it! (+{config.BLOCK_STAMINA_RECOVERY} stamina){counter_msg}"
     elif was_blocking and actual_damage < base_damage:
@@ -476,7 +476,7 @@ def execute_move(move_type, attacker, target=None):
                 'message': "Special move requires a target!",
                 'damage': 0
             }
-        # Use special move with cooldown check
+        
         return attacker.use_special_move_with_cooldown(target)
     
     else:
@@ -580,14 +580,14 @@ def can_perform_move(character, move_type):
         return True, "Can perform evade"
     
     elif move_type == 'rest':
-        # Rest is always available (costs no stamina)
+        
         return True, "Can rest"
     
     elif move_type == 'special':
-        # Check cooldown
+        
         if not character.can_use_special():
             return False, f"On cooldown ({character.special_move_cooldown} turns remaining)"
-        # Special moves have character-specific costs, so we can't check stamina here
+        
         return True, "Special move available"
     
     else:
@@ -618,10 +618,10 @@ def get_available_moves(character):
     if character.stamina >= config.EVADE_STAMINA_COST:
         available.append('evade')
     
-    # Rest is always available
+    
     available.append('rest')
     
-    # Special moves are always listed (they check their own stamina and cooldown)
+    
     available.append('special')
     
     return available

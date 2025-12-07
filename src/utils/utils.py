@@ -24,15 +24,15 @@ def weighted_choice(choices):
     choices_list = [item[0] for item in items]
     weights = [item[1] for item in items]
     
-    # Normalize weights to sum to 1.0
+    
     total_weight = sum(weights)
     if total_weight == 0:
-        # If all weights are 0, return random choice
+        
         return random.choice(choices_list)
     
     normalized_weights = [w / total_weight for w in weights]
     
-    # Use random.choices for weighted selection
+    
     return random.choices(choices_list, weights=normalized_weights, k=1)[0]
 
 
@@ -54,7 +54,7 @@ def create_bar(current, maximum, length, filled_char='█', empty_char='░'):
         return empty_char * length
     
     filled_length = int((current / maximum) * length)
-    filled_length = max(0, min(filled_length, length))  # Clamp between 0 and length
+    filled_length = max(0, min(filled_length, length))  
     
     bar = filled_char * filled_length + empty_char * (length - filled_length)
     return bar
@@ -103,7 +103,7 @@ def format_character_status(character):
     
     status = f"{character.name}:\n  {hp_bar}\n  {stamina_bar}"
     
-    # Add status effects if any
+    
     if character.status_effects:
         effects = ", ".join(character.status_effects.keys())
         status += f"\n  Status Effects: {effects}"
@@ -159,7 +159,7 @@ def log_message(message, level='INFO'):
     if not config.DEBUG_MODE and level == 'DEBUG':
         return
     
-    # Check if we should show this log level
+    
     levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR']
     current_level_index = levels.index(config.LOG_LEVEL)
     message_level_index = levels.index(level)

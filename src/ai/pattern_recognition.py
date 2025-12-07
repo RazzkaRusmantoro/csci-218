@@ -18,7 +18,7 @@ class PatternRecognizer:
         """
         self.history_size = history_size
         self.move_history = deque(maxlen=history_size)
-        self.pattern_strength = 0.0  # 0.0 to 1.0
+        self.pattern_strength = 0.0  
         self.predicted_next_move = None
         self.common_patterns = {
             'aggressive': ['punch', 'punch', 'special'],
@@ -45,12 +45,12 @@ class PatternRecognizer:
             self.predicted_next_move = None
             return
         
-        # Convert deque to list for easier slicing
+        
         move_list = list(self.move_history)
         
-        # Check for repeating patterns
+        
         if len(move_list) >= 3:
-            # Look for 2-move patterns
+            
             last_two = tuple(move_list[-2:])
             count = 0
             for i in range(len(move_list) - 2):
@@ -58,10 +58,10 @@ class PatternRecognizer:
                     count += 1
             
             if count >= 2:
-                # Pattern detected - predict next move based on history
+                
                 self.pattern_strength = min(1.0, count / 3.0)
                 
-                # Find most common move after this pattern
+                
                 next_moves = []
                 for i in range(len(move_list) - 2):
                     if tuple(move_list[i:i+2]) == last_two and i + 2 < len(move_list):
@@ -77,13 +77,13 @@ class PatternRecognizer:
                 self.pattern_strength = 0.0
                 self.predicted_next_move = None
         
-        # Check against known patterns
+        
         history_str = ' -> '.join(move_list)
         for pattern_name, pattern_sequence in self.common_patterns.items():
             pattern_str = ' -> '.join(pattern_sequence)
             if pattern_str in history_str:
                 self.pattern_strength = 0.8
-                # Predict continuation of pattern
+                
                 if len(move_list) < len(pattern_sequence):
                     idx = len(move_list)
                     if idx < len(pattern_sequence):
@@ -115,12 +115,12 @@ class PatternRecognizer:
         if not self.predicted_next_move:
             return False
         
-        # Counter strategies
+        
         counter_map = {
-            'punch': 'block',  # Block counters punch
-            'special': 'evade',  # Evade counters special
-            'block': 'special',  # Special ignores block
-            'evade': 'punch',  # Punch is reliable vs evade
+            'punch': 'block',  
+            'special': 'evade',  
+            'block': 'special',  
+            'evade': 'punch',  
         }
         
         return self.predicted_next_move == move_type and self.pattern_strength > 0.5

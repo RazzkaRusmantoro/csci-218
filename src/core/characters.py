@@ -106,10 +106,10 @@ class Character:
         if self.is_blocking:
             import random
             from src.utils import config
-            # Chance to completely block
+            
             if random.random() < config.BLOCK_COMPLETE_BLOCK_CHANCE:
-                return 0  # Complete block - no damage
-            # Otherwise reduce damage significantly
+                return 0  
+            
             damage = int(damage * (1.0 - config.BLOCK_DAMAGE_REDUCTION))
         self.hp = max(0, self.hp - damage)
         return damage
@@ -259,13 +259,13 @@ class Mage(Character):
         
         self.stamina -= stamina_cost
         
-        # Fireball ignores evade
+        
         was_evading = target.is_evading
         target.is_evading = False
         
-        damage = int(self.base_damage * 2.2)  # ~37 damage
+        damage = int(self.base_damage * 2.2)  
         
-        # Apply damage with block check
+        
         actual_damage, blocked_completely, damage_msg = self._apply_damage_with_block_check(target, damage, "Fireball")
         
         target.is_evading = was_evading

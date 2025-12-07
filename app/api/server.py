@@ -9,30 +9,25 @@ import sys
 import os
 import json
 
-# Add parent directory to path to import game modules
-# server.py is at: csci-218/app/api/server.py
-# src/ is now at: csci-218/src/
-# We need to go up 2 levels to get to csci-218 where src/ is located
-current_dir = os.path.dirname(os.path.abspath(__file__))  # csci-218/app/api
-csci218_root = os.path.abspath(os.path.join(current_dir, '../..'))  # Go up 2 levels: api -> app -> csci-218
+current_dir = os.path.dirname(os.path.abspath(__file__)) 
+csci218_root = os.path.abspath(os.path.join(current_dir, '../..'))
 sys.path.insert(0, csci218_root)
 
 from src.core import characters, game_engine
 from src.core import moves as moves_module
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for Next.js frontend
+CORS(app)
 
-# Store active games in memory (in production, use a database)
 active_games = {}
 
 def character_to_dict(char):
     """Convert character object to dictionary."""
     return {
         'name': char.name,
-        'hp': max(0, char.hp),  # Ensure HP never goes negative
+        'hp': max(0, char.hp),
         'max_hp': char.max_hp,
-        'stamina': max(0, char.stamina),  # Ensure stamina never goes negative
+        'stamina': max(0, char.stamina),
         'max_stamina': char.max_stamina,
         'base_damage': char.base_damage,
         'special_move_name': char.special_move_name,
@@ -79,12 +74,10 @@ def start_game():
         return jsonify({'error': 'Player character is required'}), 400
     
     try:
-        # Create game engine
         game = game_engine.create_game(player_char_name, difficulty=difficulty)
         game.turn_number = 0
         game.game_over = False
         
-        # Initialize AI state (ensure FSM state is set)
         if hasattr(game.ai_controller, 'update_state'):
             game.ai_controller.update_state(game.player)
         
