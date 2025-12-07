@@ -10,12 +10,12 @@ import os
 import json
 
 # Add parent directory to path to import game modules
-# Get the workspace root (CSCI218 Web folder)
 # server.py is at: csci-218/app/api/server.py
-# We need to go up 3 levels to get to workspace root where src/ is located
+# src/ is now at: csci-218/src/
+# We need to go up 2 levels to get to csci-218 where src/ is located
 current_dir = os.path.dirname(os.path.abspath(__file__))  # csci-218/app/api
-workspace_root = os.path.abspath(os.path.join(current_dir, '../../..'))  # Go up 3 levels: api -> app -> csci-218 -> workspace root
-sys.path.insert(0, workspace_root)
+csci218_root = os.path.abspath(os.path.join(current_dir, '../..'))  # Go up 2 levels: api -> app -> csci-218
+sys.path.insert(0, csci218_root)
 
 from src.core import characters, game_engine
 from src.core import moves as moves_module
@@ -84,6 +84,10 @@ def start_game():
         game.turn_number = 0
         game.game_over = False
         
+        # Initialize AI state (ensure FSM state is set)
+        if hasattr(game.ai_controller, 'update_state'):
+            game.ai_controller.update_state(game.player)
+        
         # Store game
         active_games[game_id] = game
         
@@ -109,6 +113,18 @@ def start_game():
             
             moves_info.append(move_data)
         
+        # Get initial AI state info
+        if hasattr(game.ai_controller, 'get_state_info'):
+            ai_state_info = game.ai_controller.get_state_info()
+        else:
+            # Fallback: use FSM helper directly
+            from src.ai import fsm
+            ai_state_info = fsm.get_state_info_dict(
+                game.ai_controller.current_state if hasattr(game.ai_controller, 'current_state') else fsm.DEFAULT_STATE,
+                game.ai_char,
+                game.player
+            )
+        
         return jsonify({
             'game_id': game_id,
             'player': character_to_dict(game.player),
@@ -116,7 +132,13 @@ def start_game():
             'difficulty': difficulty,
             'turn_number': game.turn_number,
             'game_over': game.game_over,
-            'available_moves': moves_info
+            'available_moves': moves_info,
+            'ai_state': {
+                'state': ai_state_info.get('state', 'Unknown'),
+                'state_description': ai_state_info.get('state_description', 'Unknown'),
+                'health_percentage': ai_state_info.get('health_percentage', 0),
+                'stamina_percentage': ai_state_info.get('stamina_percentage', 0)
+            }
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -156,8 +178,20 @@ def get_game_state(game_id):
         moves_info.append(move_data)
     
     # Get AI state info - update state first to get current FSM state
-    game.ai_controller.update_state(game.player)
-    ai_state_info = game.ai_controller.get_state_info() if hasattr(game.ai_controller, 'get_state_info') else {}
+    if hasattr(game.ai_controller, 'update_state'):
+        game.ai_controller.update_state(game.player)
+    
+    # Get state info using the AI controller's method
+    if hasattr(game.ai_controller, 'get_state_info'):
+        ai_state_info = game.ai_controller.get_state_info()
+    else:
+        # Fallback: use FSM helper directly
+        from src.ai import fsm
+        ai_state_info = fsm.get_state_info_dict(
+            game.ai_controller.current_state if hasattr(game.ai_controller, 'current_state') else fsm.DEFAULT_STATE,
+            game.ai_char,
+            game.player
+        )
     
     return jsonify({
         'game_id': game_id,
@@ -168,7 +202,7 @@ def get_game_state(game_id):
         'winner': game.winner.name if game.winner else None,
         'available_moves': moves_info,
         'ai_state': {
-            'state': str(ai_state_info.get('state', 'Unknown')),
+            'state': ai_state_info.get('state', 'Unknown'),
             'state_description': ai_state_info.get('state_description', 'Unknown'),
             'health_percentage': ai_state_info.get('health_percentage', 0),
             'stamina_percentage': ai_state_info.get('stamina_percentage', 0)
@@ -290,9 +324,21 @@ def make_move(game_id):
         # Get updated AI state info after move
         if hasattr(game.ai_controller, 'update_state'):
             game.ai_controller.update_state(game.player)
-        ai_state_info = game.ai_controller.get_state_info() if hasattr(game.ai_controller, 'get_state_info') else {}
+        
+        # Get state info using the AI controller's method
+        if hasattr(game.ai_controller, 'get_state_info'):
+            ai_state_info = game.ai_controller.get_state_info()
+        else:
+            # Fallback: use FSM helper directly
+            from src.ai import fsm
+            ai_state_info = fsm.get_state_info_dict(
+                game.ai_controller.current_state if hasattr(game.ai_controller, 'current_state') else fsm.DEFAULT_STATE,
+                game.ai_char,
+                game.player
+            )
+        
         ai_state_obj = {
-            'state': str(ai_state_info.get('state', 'Unknown')),
+            'state': ai_state_info.get('state', 'Unknown'),
             'state_description': ai_state_info.get('state_description', 'Unknown state'),
             'health_percentage': ai_state_info.get('health_percentage', 0),
             'stamina_percentage': ai_state_info.get('stamina_percentage', 0)
